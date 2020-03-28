@@ -5,14 +5,17 @@
 
 #define VERTICAL_NUMBER 10
 #define HORIZONTAL_NUMBER 10
-#define WINDOW_WIDTH 800
-#define WINDOW_HEIGHT 800
+#define GRID_WIDTH 800
+#define GRID_HEIGHT 800
+#define WINDOW_WIDTH 810
+#define WINDOW_HEIGHT 900
 #define MINE_SPAWN_PERCENT 10 // means only 10% block will have mines in it (probably)
 #define MINE_RADIUS 25
+#define INNER_BLOCK_PADDING 10
 
 
-int BLOCK_HEIGHT = WINDOW_HEIGHT/VERTICAL_NUMBER;
-int BLOCK_WIDTH = WINDOW_WIDTH/HORIZONTAL_NUMBER;
+int BLOCK_HEIGHT = GRID_HEIGHT/VERTICAL_NUMBER;
+int BLOCK_WIDTH = GRID_WIDTH/HORIZONTAL_NUMBER;
 
 using namespace std;
 
@@ -44,6 +47,7 @@ POINT handleMouseInput(){
 class Grid {
     private:
         int gridArray[10][10];
+        int gameOver = 0; // means game is not obver initially
 
         void drawBlock(int x, int y){
             // draws a rectangle/square shape at the appropriate x,y indices
@@ -71,6 +75,56 @@ class Grid {
             line(x_topLeft, y_topLeft, x_bottomLeft, y_bottomLeft);  // line for left
         }
 
+        void drawUnplayedBlock(int x, int y){
+
+            int x_topLeft = x*BLOCK_WIDTH  + INNER_BLOCK_PADDING;
+            int y_topLeft = y*BLOCK_HEIGHT + INNER_BLOCK_PADDING;
+
+            int x_topRight = (x+1)*BLOCK_WIDTH - INNER_BLOCK_PADDING;
+            int y_topRight = y*BLOCK_HEIGHT + INNER_BLOCK_PADDING;
+
+            int x_bottomLeft = x*BLOCK_WIDTH + INNER_BLOCK_PADDING;
+            int y_bottomLeft = (y+1)*BLOCK_HEIGHT - INNER_BLOCK_PADDING;
+
+            int x_bottomRight = (x+1)*BLOCK_WIDTH - INNER_BLOCK_PADDING;
+            int y_bottomRight = (y+1)*BLOCK_HEIGHT - INNER_BLOCK_PADDING;
+
+            setcolor(LIGHTGRAY);
+            setlinestyle(SOLID_LINE, 1, 2);
+            setfillstyle(SOLID_FILL,LIGHTGRAY);
+            line(x_topLeft, y_topLeft, x_topRight, y_topRight);  // line for top
+            line(x_bottomLeft, y_bottomLeft, x_bottomRight, y_bottomRight);  // line for bottom
+            line(x_topRight, y_topRight, x_bottomRight, y_bottomRight);  // line for right
+            line(x_topLeft, y_topLeft, x_bottomLeft, y_bottomLeft);  // line for left
+
+            floodfill(x_topLeft+5, y_topLeft+5, LIGHTGRAY);
+        }
+
+        void drawPlayedBlock(int x, int y){
+
+            int x_topLeft = x*BLOCK_WIDTH  + INNER_BLOCK_PADDING;
+            int y_topLeft = y*BLOCK_HEIGHT + INNER_BLOCK_PADDING;
+
+            int x_topRight = (x+1)*BLOCK_WIDTH - INNER_BLOCK_PADDING;
+            int y_topRight = y*BLOCK_HEIGHT + INNER_BLOCK_PADDING;
+
+            int x_bottomLeft = x*BLOCK_WIDTH + INNER_BLOCK_PADDING;
+            int y_bottomLeft = (y+1)*BLOCK_HEIGHT - INNER_BLOCK_PADDING;
+
+            int x_bottomRight = (x+1)*BLOCK_WIDTH - INNER_BLOCK_PADDING;
+            int y_bottomRight = (y+1)*BLOCK_HEIGHT - INNER_BLOCK_PADDING;
+
+            setcolor(BLACK);
+            setlinestyle(SOLID_LINE, 1, 3);
+            setfillstyle(SOLID_FILL, BLACK);
+            line(x_topLeft, y_topLeft, x_topRight, y_topRight);  // line for top
+            line(x_bottomLeft, y_bottomLeft, x_bottomRight, y_bottomRight);  // line for bottom
+            line(x_topRight, y_topRight, x_bottomRight, y_bottomRight);  // line for right
+            line(x_topLeft, y_topLeft, x_bottomLeft, y_bottomLeft);  // line for left
+
+            floodfill(x_topLeft+5, y_topLeft+5, BLACK);
+        }
+
         int placeMine(){
             // a function which tells randomly if a mine should be placed or not
             int num = getRandomNumber();
@@ -96,6 +150,15 @@ class Grid {
             circle(x_center, y_center, MINE_RADIUS);
         }
 
+        void displayGameOver(){
+            int x_start = 10;
+            int y_start = WINDOW_HEIGHT-(WINDOW_HEIGHT-GRID_HEIGHT)/2 -20;
+
+            setcolor(RED);
+            settextstyle(SANS_SERIF_FONT, HORIZ_DIR, 2);
+            outtextxy(x_start, y_start, "GAME OVER");
+        }
+
     public:
         void initializeGrid(){
             for(int y=0; y<VERTICAL_NUMBER; y++){
@@ -115,12 +178,7 @@ class Grid {
             for(int y=0; y<VERTICAL_NUMBER; y++){
                 for (int x=0; x<HORIZONTAL_NUMBER; x++){
                     drawBlock(x, y);
-                    if (gridArray[x][y]==1){
-                        // means block is played
-                    } else if(gridArray[x][y]==2){
-                        // means its a mine
-                        drawMine(x, y);
-                    }
+                    drawUnplayedBlock(x, y);
                 }
             }
         }
@@ -130,6 +188,30 @@ class Grid {
             indices.x = mouse_coord.x/BLOCK_WIDTH;
             indices.y = mouse_coord.y/BLOCK_HEIGHT;
             return indices;
+        }
+
+        void handleUserClick(int x, int y){
+            if (gameOver){
+                return;
+            }
+            if (gridArray[x][y]==2){
+                gameOver=true;
+                displayGameOver();
+                // revailing all mines as game is now over
+                for(int j=0; j<VERTICAL_NUMBER; j++){
+                    for (int i=0; i<HORIZONTAL_NUMBER; i++){
+                        if (gridArray[i][j]==2){
+                            drawPlayedBlock(i, j);
+                            drawMine(i, j);
+                        }
+
+                    }
+                }
+                
+            }
+            else{
+                drawPlayedBlock(x, y);
+            }
         }
 
 
@@ -154,10 +236,22 @@ int main(){
         }
 
         indices = GridObject.convertCoordinatesToIndices(mouse_coord);
-        cout<<"Rnadom number : "<<rand();
-
+        // handle user click
+        GridObject.handleUserClick(indices.x, indices.y);
     }
     
     getch();
     return 0;
 }
+
+// STRATEGY -> 
+// 0 -> unplayed plank block
+// 1 -> played empty block
+// 2 -> unplayed block with a mine 
+
+
+// Players clicks on a block
+// block can be 0, 1, 2
+// if block is 1, ignore the click as it is already a played block
+// if block is 0, clear the block
+// if block is 2, uncover all the mines, game is over
