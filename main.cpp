@@ -8,7 +8,7 @@
 #define WINDOW_WIDTH 800
 #define WINDOW_HEIGHT 800
 #define MINE_SPAWN_PERCENT 10 // means only 10% block will have mines in it (probably)
-#define MINE_RADIUS 30
+#define MINE_RADIUS 25
 
 
 int BLOCK_HEIGHT = WINDOW_HEIGHT/VERTICAL_NUMBER;
@@ -53,11 +53,22 @@ class Grid {
             int x_topLeft = x*BLOCK_WIDTH;  // x coord of topLeft point of the block
             int y_topLeft = y*BLOCK_HEIGHT; // y coord of topLeft point of the block
 
+            int x_topRight = (x+1)*BLOCK_WIDTH;
+            int y_topRight = y*BLOCK_HEIGHT;
 
-            // drawing the rectangle in dark gray border
+            int x_bottomLeft = x*BLOCK_WIDTH;
+            int y_bottomLeft = (y+1)*BLOCK_HEIGHT;
+
+            int x_bottomRight = (x+1)*BLOCK_WIDTH;
+            int y_bottomRight = (y+1)*BLOCK_HEIGHT;
+
             setcolor(DARKGRAY);
-            setlinestyle(SOLID_LINE, 1, 3);
-            rectangle(x_topLeft, y_topLeft, BLOCK_WIDTH, BLOCK_HEIGHT);
+            setlinestyle(SOLID_LINE, 1, 2);
+
+            line(x_topLeft, y_topLeft, x_topRight, y_topRight);  // line for top
+            line(x_bottomLeft, y_bottomLeft, x_bottomRight, y_bottomRight);  // line for bottom
+            line(x_topRight, y_topRight, x_bottomRight, y_bottomRight);  // line for right
+            line(x_topLeft, y_topLeft, x_bottomLeft, y_bottomLeft);  // line for left
         }
 
         int placeMine(){
@@ -103,14 +114,12 @@ class Grid {
         void drawGrid(){
             for(int y=0; y<VERTICAL_NUMBER; y++){
                 for (int x=0; x<HORIZONTAL_NUMBER; x++){
+                    drawBlock(x, y);
                     if (gridArray[x][y]==1){
                         // means block is played
                     } else if(gridArray[x][y]==2){
                         // means its a mine
                         drawMine(x, y);
-                    } else{
-                        // else is an unplayed block
-                        drawBlock(x, y);
                     }
                 }
             }
@@ -152,27 +161,3 @@ int main(){
     getch();
     return 0;
 }
-
-
-// void drawBlock(int x, int y){
-//             // draws a rectangle/square shape at the appropriate x,y indices
-//             // x, y are not coordinates, but indices of gridArray
-
-//             // pointing out the corners of this block
-//             int x_topLeft = x*BLOCK_WIDTH;  // x coord of topLeft point of the block
-//             int y_topLeft = y*BLOCK_HEIGHT; // y coord of topLeft point of the block
-
-//             int x_topRight = (x+1)*BLOCK_WIDTH;
-//             int y_topRight = y*BLOCK_HEIGHT;
-
-//             int x_bottomLeft = x*BLOCK_WIDTH;
-//             int y_bottomLeft = (y+1)*BLOCK_HEIGHT;
-
-//             int x_bottomRight = (x+1)*BLOCK_WIDTH;
-//             int y_bottomRight = (y+1)*BLOCK_HEIGHT;
-
-//             line(x_topLeft, y_topLeft, x_topRight, y_topRight);  // line for top
-//             line(x_bottomLeft, y_bottomLeft, x_bottomRight, y_bottomRight);  // line for bottom
-//             line(x_topRight, y_topRight, x_bottomRight, y_bottomRight);  // line for right
-//             line(x_topLeft, y_topLeft, x_bottomLeft, y_bottomLeft);  // line for left
-//         }
