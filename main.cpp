@@ -2,20 +2,21 @@
 #include <graphics.h>
 #include <string>
 #include <sstream>
+#include <ctime> 
 
-#define VERTICAL_NUMBER 10
-#define HORIZONTAL_NUMBER 10
+#define VERTICAL_NUMBER 12
+#define HORIZONTAL_NUMBER 12
 #define GRID_WIDTH 800
 #define GRID_HEIGHT 800
 #define WINDOW_WIDTH 810
 #define WINDOW_HEIGHT 900
-#define MINE_SPAWN_PERCENT 10 // means only 10% block will have mines in it (probably)
-#define MINE_RADIUS 25
-#define INNER_BLOCK_PADDING 10
+#define MINE_SPAWN_PERCENT 20 // means only 10% block will have mines in it (probably)
+#define INNER_BLOCK_PADDING 3;
 
 
 int BLOCK_HEIGHT = GRID_HEIGHT/VERTICAL_NUMBER;
 int BLOCK_WIDTH = GRID_WIDTH/HORIZONTAL_NUMBER;
+int MINE_RADIUS = BLOCK_HEIGHT/2-6;
 
 using namespace std;
 
@@ -46,7 +47,7 @@ POINT handleMouseInput(){
 
 class Grid {
     private:
-        int gridArray[10][10];
+        int gridArray[100][100];
         int gameOver = 0; // means game is not obver initially
 
         void drawBlock(int x, int y){
@@ -138,6 +139,23 @@ class Grid {
             }
         }
 
+        void checkWin(){
+            // player wins when there is no empty place left
+            // and he didn't touch a mine
+
+            for(int y=0; y<VERTICAL_NUMBER; y++){
+                for (int x=0; x<HORIZONTAL_NUMBER; x++){
+                    if (gridArray[x][y]==0){
+                        // means player has not won as there is a block to play
+                        return;
+                    }
+                }
+            }
+
+            gameOver=true;
+            displayYouWon();
+        }
+
         void drawMine(int x, int y){
             // draws a mine at the specified indices
             // x, y are indices here not coordinates
@@ -145,6 +163,7 @@ class Grid {
             int x_center = x*BLOCK_WIDTH  + (BLOCK_WIDTH/2);  // x coord of topLeft point of the block
             int y_center = y*BLOCK_HEIGHT + (BLOCK_HEIGHT/2); // y coord of topLeft point of the block
 
+            drawPlayedBlock(x, y);
             setcolor(RED);
             setlinestyle(SOLID_LINE, 1, 4);
             circle(x_center, y_center, MINE_RADIUS);
@@ -159,6 +178,39 @@ class Grid {
             outtextxy(x_start, y_start, "GAME OVER");
         }
 
+        void displayYouWon(){
+            int x_start = 10;
+            int y_start = WINDOW_HEIGHT-(WINDOW_HEIGHT-GRID_HEIGHT)/2 -20;
+
+            setcolor(GREEN);
+            settextstyle(SANS_SERIF_FONT, HORIZ_DIR, 2);
+            outtextxy(x_start, y_start, "YOU WON");
+        }
+
+        void clearAreaHelper(int x, int y){
+            // give coordinates to it, this fucntion will clear that block
+            if (gridArray[x][y]==2){
+                drawMine(x, y);
+            }
+            else{
+                gridArray[x][y] = 1;
+                drawPlayedBlock(x, y);
+            }
+
+        }
+
+        void clearSurroundingArea(int x, int y){
+            clearAreaHelper(x+1, y+1);
+            clearAreaHelper(x-1, y-1);
+            clearAreaHelper(x+1, y-1);
+            clearAreaHelper(x-1, y+1);
+            clearAreaHelper(x+1, y);
+            clearAreaHelper(x-1, y);
+            clearAreaHelper(x, y-1);
+            clearAreaHelper(x, y+1);
+
+        }
+
     public:
         void initializeGrid(){
             for(int y=0; y<VERTICAL_NUMBER; y++){
@@ -167,9 +219,7 @@ class Grid {
                     // 1 means played safe block
                     // 2 means unplayed block with mine -> user touchs this block, he's dead
                     gridArray[x][y] = placeMine();
-                    cout<<gridArray[x][y]<<" ";
                 }
-                cout<<endl;
             }
             // after the grid is initialized, randomly spawn mines
         }
@@ -201,16 +251,17 @@ class Grid {
                 for(int j=0; j<VERTICAL_NUMBER; j++){
                     for (int i=0; i<HORIZONTAL_NUMBER; i++){
                         if (gridArray[i][j]==2){
-                            drawPlayedBlock(i, j);
                             drawMine(i, j);
                         }
 
                     }
                 }
-                
             }
             else{
+                gridArray[x][y] = 1;
                 drawPlayedBlock(x, y);
+                clearSurroundingArea(x, y);
+                checkWin();
             }
         }
 
@@ -218,6 +269,7 @@ class Grid {
 };
 
 int main(){
+    srand((unsigned)time(0));
     POINT mouse_coord, indices;
 
     initializeGraphics();
@@ -253,5 +305,6 @@ int main(){
 // Players clicks on a block
 // block can be 0, 1, 2
 // if block is 1, ignore the click as it is already a played block
-// if block is 0, clear the block
 // if block is 2, uncover all the mines, game is over
+// if block is 0, clear the block and the areas surrounding it
+// i.e. top, bottom, left, right and diagnally
